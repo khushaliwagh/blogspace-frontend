@@ -412,6 +412,7 @@ function App() {
   const [showAuth, setShowAuth] = useState(false);
 
   const [posts, setPosts] = useState(samplePosts);
+  const [showMyStories, setShowMyStories] = useState(false);
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All stories");
   const [showForm, setShowForm] = useState(false);
@@ -423,6 +424,105 @@ function App() {
   const [isPublishing, setIsPublishing] = useState(false);
   const [editingPostId, setEditingPostId] = useState(null);
   const [deletingPostId, setDeletingPostId] = useState(null);
+
+async function loadMyStories() {
+  if (!currentUser) {
+    requestAuth();
+    return;
+  }
+
+  setIsLoading(true);
+  setNotice("");
+
+  try {
+    const response = await fetch("/api/posts/my-stories", {
+      credentials: "include",
+    });
+
+    if (response.status === 401 || response.status === 403) {
+      setNotice("Please log in again to view your stories.");
+      return;
+    }
+
+    if (!response.ok) {
+      throw new Error(`Could not load My Stories: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    console.log("My Stories API response:", data);
+
+    const myPosts = (data.content ?? []).map((post, index) => ({
+      ...post,
+      category: post.category || "Technology",
+      readTime: "3 min read",
+      accent: accents[index % accents.length],
+      symbol: symbols[index % symbols.length],
+      featured: index === 0,
+    }));
+
+ setPosts(myPosts);
+setShowMyStories(true);
+setSearch("");
+setActiveCategory("All stories");
+closeEditor();
+
+window.setTimeout(() => {
+  document.getElementById("articles")?.scrollIntoView({
+    behavior: "smooth",
+    block: "start",
+  });
+}, 100);
+  } catch (error) {
+    console.error("Error loading My Stories:", error);
+    setNotice(error.message || "Could not load your stories.");
+  } finally {
+    setIsLoading(false);
+  }
+}
+
+async function loadAllStories() {
+  setIsLoading(true);
+  setNotice("");
+
+  try {
+    const response = await fetch("/api/posts", {
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      throw new Error(`Could not load all stories: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    const apiPosts = (data.content ?? [])
+      .filter((post) => post.title && post.content)
+      .map((post, index) => ({
+        ...post,
+        category: post.category || "Technology",
+        readTime: "3 min read",
+        accent: accents[index % accents.length],
+        symbol: symbols[index % symbols.length],
+        featured: index === 0,
+      }));
+
+    setPosts(apiPosts);
+    setShowMyStories(false);
+    setSearch("");
+    setActiveCategory("All stories");
+
+    document.getElementById("articles")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  } catch (error) {
+    console.error("Error loading all stories:", error);
+    setNotice(error.message || "Could not load all stories.");
+  } finally {
+    setIsLoading(false);
+  }
+}
 
   // Effect 1: Load posts. This is separate from the login effect.
   useEffect(() => {
@@ -730,9 +830,16 @@ function App() {
     }
   }
 
+
   function PostActions({ post }) {
-    // Show management controls only to logged-in users.
-    if (!currentUser) return null;
+    // Show Edit and Delete only to the story's author.
+    if (
+      !currentUser ||
+      post.authorId == null ||
+      String(post.authorId) !== String(currentUser.id)
+    ) {
+      return null;
+    }
 
     return (
       <div className="post-management-actions">
@@ -756,6 +863,7 @@ function App() {
       </div>
     );
   }
+
 
   // Display the login/registration page when requested.
   if (showAuth) {
@@ -783,7 +891,7 @@ function App() {
         <span className="announcement-star">✳</span>
       </div>
 
-      <header className="navbar">
+            <header className="navbar">
         <a className="brand" href="#home" aria-label="BlogSpace home">
           <span className="brand-icon">b.</span>
           <span>
@@ -801,6 +909,21 @@ function App() {
           {currentUser ? (
             <>
               <span>{currentUser.name}</span>
+
+              <button
+                type="button"
+                className="cancel-button"
+                onClick={() => {
+                  if (showMyStories) {
+                    loadAllStories();
+                  } else {
+                    loadMyStories();
+                  }
+                }}
+              >
+                {showMyStories ? "All Stories" : "My Stories"}
+              </button>
+
               <button
                 type="button"
                 className="cancel-button"
@@ -808,6 +931,7 @@ function App() {
               >
                 Log out
               </button>
+
               <button
                 type="button"
                 className="write-button"
@@ -836,6 +960,7 @@ function App() {
               >
                 Log in
               </button>
+
               <button
                 type="button"
                 className="write-button"
@@ -847,7 +972,6 @@ function App() {
           )}
         </div>
       </header>
-
       <main>
         <section className="hero">
           <div className="hero-copy">
@@ -1090,9 +1214,19 @@ function App() {
 
                 <div className="featured-content">
                   <div className="featured-meta">
-                    <span className="category-label">{featuredPost.category}</span>
+                    <span className="category-label">
+                      {featuredPost.category}
+                    </span>
+
                     <span>{featuredPost.readTime}</span>
                   </div>
+
+                  <p className="story-author">
+                    Written by{" "}
+                    <strong>
+                      {featuredPost.authorName || "Unknown author"}
+                    </strong>
+                  </p>
 
                   <h3>{featuredPost.title}</h3>
                   <p>{featuredPost.content}</p>
@@ -1160,6 +1294,12 @@ function App() {
 
                   <h4>{post.title}</h4>
                   <p>{post.content}</p>
+
+                  <p className="story-author">
+                    Written by{" "}
+                    <strong>{post.authorName || "Unknown author"}</strong>
+                  </p>
+
 
                   <div className="card-footer">
                     <span>FROM THE BLOGSPACE JOURNAL</span>
