@@ -1,4 +1,4 @@
-
+import { apiUrl } from "./api";
 import { useEffect, useState } from "react";
 import "./App.css";
 import Auth from "./Auth";
@@ -61,7 +61,7 @@ const symbols = ["{ }", "☘", "↗", "⚛"];
 
 // Get a fresh CSRF token before a POST, PUT or DELETE request.
 async function getCsrfToken() {
-  const response = await fetch("/api/auth/csrf", {
+  const response = await fetch(apiUrl("/api/auth/csrf"), {
     credentials: "include",
   });
 
@@ -75,7 +75,7 @@ async function getCsrfToken() {
 async function secureRequest(url, options = {}) {
   const csrf = await getCsrfToken();
 
-  return fetch(url, {
+  return fetch(apiUrl(url), {
     ...options,
     credentials: "include",
     headers: {
@@ -104,7 +104,7 @@ function CommentsSection({ postId, currentUser, onRequestAuth }) {
 
       try {
         const response = await fetch(
-          `/api/posts/${postId}/comments`,
+          apiUrl(`/api/posts/${postId}/comments`),
           { credentials: "include" }
         );
 
@@ -275,7 +275,7 @@ function LikeButton({ postId, currentUser, onRequestAuth }) {
 
       try {
         const countResponse = await fetch(
-          `/api/posts/${postId}/likes`
+          apiUrl(`/api/posts/${postId}/likes`)
         );
 
         if (!countResponse.ok) {
@@ -290,7 +290,7 @@ function LikeButton({ postId, currentUser, onRequestAuth }) {
 
         if (currentUser) {
           const statusResponse = await fetch(
-            `/api/posts/${postId}/likes/me`,
+            apiUrl(`/api/posts/${postId}/likes/me`),
             { credentials: "include" }
           );
 
@@ -435,7 +435,7 @@ async function loadMyStories() {
   setNotice("");
 
   try {
-    const response = await fetch("/api/posts/my-stories", {
+    const response = await fetch(apiUrl("/api/posts/my-stories"), {
       credentials: "include",
     });
 
@@ -486,7 +486,7 @@ async function loadAllStories() {
   setNotice("");
 
   try {
-    const response = await fetch("/api/posts", {
+    const response = await fetch(apiUrl("/api/posts"), {
       credentials: "include",
     });
 
@@ -530,7 +530,7 @@ async function loadAllStories() {
 
     async function loadPosts() {
       try {
-        const response = await fetch("/api/posts");
+        const response = await fetch(apiUrl("/api/posts"));
 
         if (!response.ok) {
           throw new Error(`Could not load posts: ${response.status}`);
@@ -576,7 +576,7 @@ async function loadAllStories() {
 
     async function checkLogin() {
       try {
-        const response = await fetch("/api/auth/me", {
+        const response = await fetch(apiUrl("/api/auth/me"), {
           credentials: "include",
         });
 

@@ -1,4 +1,4 @@
-
+import { apiUrl } from "./api";
 import { useState } from "react";
 import "./Auth.css";
 
@@ -20,7 +20,7 @@ export default function Auth({ onLogin }) {
 
     try {
       // Get the current CSRF token before sending the request.
-      const csrfResponse = await fetch("/api/auth/csrf", {
+      const csrfResponse = await fetch(apiUrl("/api/auth/csrf"), {
         credentials: "include",
       });
 
@@ -40,7 +40,7 @@ export default function Auth({ onLogin }) {
           ? { email: email.trim(), password }
           : { name: name.trim(), email: email.trim(), password };
 
-      const response = await fetch(endpoint, {
+      const response = await fetch(apiUrl(endpoint), {
         method: "POST",
         credentials: "include",
         headers: {
