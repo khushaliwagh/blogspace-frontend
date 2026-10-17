@@ -21,8 +21,9 @@ export default function Auth({ onLogin }) {
     try {
       // Get the current CSRF token before sending the request.
       const csrfResponse = await fetch(apiUrl("/api/auth/csrf"), {
-        credentials: "include",
-      });
+  method: "GET",
+  credentials: "include",
+});
 
       if (!csrfResponse.ok) {
         throw new Error("Could not get the security token.");

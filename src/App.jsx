@@ -75,14 +75,10 @@ async function getCsrfToken() {
 async function secureRequest(url, options = {}) {
   const csrf = await getCsrfToken();
 
-  return fetch(apiUrl(url), {
-    ...options,
-    credentials: "include",
-    headers: {
-      ...(options.headers || {}),
-      [csrf.headerName]: csrf.token,
-    },
-  });
+ // Inside getCsrfToken()
+fetch(apiUrl("/api/auth/csrf"), {
+  credentials: "include",
+});
 }
 
 function CommentsSection({ postId, currentUser, onRequestAuth }) {
